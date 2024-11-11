@@ -6,8 +6,6 @@ The objective is to guess the entire word correctly before the figure is complet
 
 _Wikipedia_: https://en.wikipedia.org/wiki/Hangman_(game)  
 
-![](https://us.123rf.com/450wm/martialred/martialred2207/martialred220700030/189086133-l-impiccato-o-l-impiccato-che-indovina-l-icona-del-vettore-di-arte-della-linea-dell-icona-del-gioco.jpg)
-
 
 ## Implementation
 ![](https://github.com/GalloRoccoElia/The-Hangman/blob/The-Hangman/Hangman%20Graph.svg)
