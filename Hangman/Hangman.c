@@ -41,8 +41,8 @@ typedef struct {
 // Prototipes
 void terminate(short int, char *);
 void initGameState(GameState *, State, Difficulty, WordState *, int);
-void initWordState(WordState *, char *);
-void initGame(GameState *, Difficulty);
+void initWordState(GameState *, char *);
+char * initGame(GameState *, Difficulty);
 char * chooseWord(char **);
 int checkLetter(GameState *, char);
 bool checkWord(GameState *);
@@ -64,7 +64,7 @@ int main(int argc, char const *argv[])
     initGameState(&game_state, TITLE, NOT_SET, &wordState, 0);
     printGUI(&game_state);
     getchar();
-
+    // ripulisci buffer
     do
     {
         // PRE_GAME FASE
@@ -74,19 +74,27 @@ int main(int argc, char const *argv[])
         // Difficulty choise
 
         Difficulty difficulty;
-        scanf("%u", &difficulty);
+        scanf("%u", &difficulty); // u sta per unsigned
 
         // Init game based on difficulty
-        initGame(&game_state, difficulty);
-        printf("AAA%s", game_state.wordState->word);
-        int a;
-        scanf("%d", &a);
+        char * str = initGame(&game_state, difficulty);
+        initWordState(&game_state, str);
+        
+        printf("FUORI WORD: %s\n", game_state.wordState->word);
         char letter;
         do
         {
             printGUI(&game_state);
             while (getchar() != '\n') {}
+            printf("DENTRO PRIMA WORD: %s\n", game_state.wordState->word);
             scanf("%c", &letter);
+            
+            for (short i = 0; i < 10; i++)
+            {
+                printf("%d", game_state.wordState->wordFlags[i]);
+            }
+            
+            printf("DENTRO WORD: %s\n", game_state.wordState->word);           
             initGameState(&game_state, IN_GAME, (game_state.difficulty), (game_state.wordState), (game_state.attempts) + checkLetter(&game_state, letter));
         } while ((game_state.attempts) > 0);
 
@@ -97,7 +105,7 @@ int main(int argc, char const *argv[])
         // scanf("%c", &replay);
 
     } while (toupper(replay) == 'Y');
-    printf("BBB%s", game_state.wordState->word);
+    printf("FINALE: %s\n", game_state.wordState->word);
 
     // initGameState(&game_state, END_GAME, NOT_SET, &wordState, 0);
     // printGUI(&game_state);
@@ -119,17 +127,17 @@ void initGameState(GameState * gameState, State s, Difficulty d, WordState * wSt
 /**
  * Initiate the state of the word, setting everything needed for word check: `word` and `wordFlags`
  */
-void initWordState(WordState * wordState, char * w) {
-    wordState -> word = w;
+void initWordState(GameState * gState, char * w) {
+    gState -> wordState -> word = w;
     short * flags = (short *)calloc(strlen(w), sizeof(short));
-    wordState -> wordFlags = flags;
+    gState -> wordState -> wordFlags = flags;
     return;
 }
 
 /**
  * Initializes the `game_state` by `difficulty`, also loads the words' file based on `difficulty`.
  */
-void initGame(GameState * game_state, Difficulty difficulty) {
+char * initGame(GameState * game_state, Difficulty difficulty) {
     // GUI x difficulty
         // load del file parole
     // parser(file)
@@ -138,18 +146,14 @@ void initGame(GameState * game_state, Difficulty difficulty) {
 
     // in base alla difficoltà si sceglie il file e si costruisce l'array di parole
     char words[10][10] = {"sus", "aaaaaaaaa"};
-
-    // char word[] = chooseWord(words);
-    char * word = words[0];
-
-
     short max_attempt = (difficulty == EXTREME) ? MAX_ATTEMPT_EXTREME : MAX_ATTEMPT_BASE;
 
-    initWordState(game_state -> wordState, word);
-    printf("WORD%s", game_state -> wordState -> word);
     initGameState(game_state, IN_GAME, difficulty, game_state -> wordState, max_attempt);
 
-    return;
+    // char word[] = chooseWord(words);
+    char * word;
+    strcpy(word, words[0]);
+    return word;
 }
 
 /**
@@ -167,17 +171,16 @@ char * chooseWord(char ** words) {
  * Check if the letter is in the word.
  * Returns -1 if it's not, 0 otherwise
  */
-int checkLetter(GameState * game_state, char letter) {
-
-    char * word = game_state -> wordState -> word;
-    printf("Parola: %s.\n", game_state -> wordState -> word);
-    while (*word != '\0')
+int checkLetter(GameState * gameState, char letter) {
+    char * word = gameState -> wordState -> word;
+    printf("WORD%s\n", word);
+    printf("LETT%c\n", letter);
+    for (short i = 0; word[i] != '\0'; i++)
     {
-        if (letter == *word)
+        if (letter == word[i])
         {   
             return 0;
         }
-        word++;
     }
     
     return -1;
