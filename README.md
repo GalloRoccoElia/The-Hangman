@@ -10,4 +10,4 @@ _Wikipedia_: https://en.wikipedia.org/wiki/Hangman_(game)
 
 
 ## Implementation
-![]()
+![](https://github.com/GalloRoccoElia/The-Hangman/blob/The-Hangman/Hangman%20Graph.svg)
