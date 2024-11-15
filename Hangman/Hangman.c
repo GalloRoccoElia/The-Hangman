@@ -14,7 +14,8 @@ typedef enum {
     PRE_GAME,
     IN_GAME,
     IN_GAME_WORD_REUSED,
-    POST_GAME,
+    POST_GAME_WIN,
+    POST_GAME_LOSE,
     END_GAME,
 } State;
 
@@ -28,7 +29,7 @@ typedef enum {
 
 typedef struct {
     char * word;
-    short * wordFlags;
+    bool * wordFlags;
 } WordState;
 
 typedef struct {
@@ -49,6 +50,7 @@ bool checkWord(GameState *);
 void printGUI(GameState *);
 void printAttempts(GameState *);
 void printBody(GameState *);
+void printWord(GameState *);
 
 
 int main(int argc, char const *argv[])
@@ -56,72 +58,72 @@ int main(int argc, char const *argv[])
 
     system("clear");
 
-    GameState game_state;
-    WordState wordState;
+    GameState gState;
+    WordState wState;
     char replay = 'N';
 
-    // TITLE FASE
-    initGameState(&game_state, TITLE, NOT_SET, &wordState, 0);
-    printGUI(&game_state);
+    // TITLE Fase
+    initGameState(&gState, TITLE, NOT_SET, &wState, 0);
+    printGUI(&gState);
     getchar();
-    // ripulisci buffer
     do
     {
-        // PRE_GAME FASE
-        initGameState(&game_state, PRE_GAME, NOT_SET, &wordState, 0);
-        printGUI(&game_state);
+        // PRE_GAME Fase
+        initGameState(&gState, PRE_GAME, NOT_SET, &wState, 0);
+        printGUI(&gState);
 
         // Difficulty choise
-
-        Difficulty difficulty;
-        scanf("%u", &difficulty); // u sta per unsigned
+        Difficulty diff;
+        scanf("%u", &diff);
 
         // Init game based on difficulty
-        char * str = initGame(&game_state, difficulty);
-        initWordState(&game_state, str);
-        
-        printf("FUORI WORD: %s\n", game_state.wordState->word);
+        char * str = initGame(&gState, diff);
+        initWordState(&gState, str);
+
+        // IN_GAME Fase
         char letter;
+        bool win;
         do
         {
-            printGUI(&game_state);
-            while (getchar() != '\n') {}
-            printf("DENTRO PRIMA WORD: %s\n", game_state.wordState->word);
+            printGUI(&gState);
+            while (getchar() != '\n') {} // clean the input buffer
             scanf("%c", &letter);
-            
-            for (short i = 0; i < 10; i++)
-            {
-                printf("%d", game_state.wordState->wordFlags[i]);
-            }
-            
-            printf("DENTRO WORD: %s\n", game_state.wordState->word);           
-            initGameState(&game_state, IN_GAME, (game_state.difficulty), (game_state.wordState), (game_state.attempts) + checkLetter(&game_state, letter));
-        } while ((game_state.attempts) > 0);
+            initGameState(&gState, IN_GAME, (gState.difficulty), (gState.wordState), (gState.attempts) + checkLetter(&gState, letter));
+            win = checkWord(&gState);
+        } while ((gState.attempts) > 0 && !win);
 
-        // initGameState(&game_state, POST_GAME, NOT_SET, &wordState, 0);
-        // printGUI(&game_state);
+        if (win)
+        {
+            initGameState(&gState, POST_GAME_WIN, NOT_SET, &wState, 0);
+        }
+        else
+        {
+            initGameState(&gState, POST_GAME_LOSE, NOT_SET, &wState, 0);
+        }
+        printGUI(&gState);
 
-        // scanf("%*c");
-        // scanf("%c", &replay);
+        while (getchar() != '\n') {} // clean the input buffer
+        scanf("%*c");
+        scanf("%c", &replay);
 
     } while (toupper(replay) == 'Y');
-    printf("FINALE: %s\n", game_state.wordState->word);
 
-    // initGameState(&game_state, END_GAME, NOT_SET, &wordState, 0);
-    // printGUI(&game_state);
+    initGameState(&gState, END_GAME, NOT_SET, &wState, 0);
+    printGUI(&gState);
     
     return 0;
 }
 
 
 /**
- * Initiate the state of the game, setting the attempts and the state too
+ * Initiate the state of the game, setting the `attempts`, `difficulty` and the `state` too
+ * Also initiate the `WordState`.
  */
-void initGameState(GameState * gameState, State s, Difficulty d, WordState * wState, int a) {
-    gameState -> state = s;
-    gameState -> difficulty = d;
-    gameState -> wordState = wState;
-    gameState -> attempts = a;
+void initGameState(GameState * gState, State s, Difficulty d, WordState * wState, int a) {
+    gState -> state = s;
+    gState -> difficulty = d;
+    gState -> wordState = wState;
+    gState -> attempts = a;
 }
 
 /**
@@ -129,15 +131,15 @@ void initGameState(GameState * gameState, State s, Difficulty d, WordState * wSt
  */
 void initWordState(GameState * gState, char * w) {
     gState -> wordState -> word = w;
-    short * flags = (short *)calloc(strlen(w), sizeof(short));
+    bool * flags = (bool *)calloc(strlen(w), sizeof(bool));
     gState -> wordState -> wordFlags = flags;
     return;
 }
 
 /**
- * Initializes the `game_state` by `difficulty`, also loads the words' file based on `difficulty`.
+ * Initializes the `gState` by `difficulty`, also loads the words' file based on `difficulty`.
  */
-char * initGame(GameState * game_state, Difficulty difficulty) {
+char * initGame(GameState * gState, Difficulty diff) {
     // GUI x difficulty
         // load del file parole
     // parser(file)
@@ -145,14 +147,16 @@ char * initGame(GameState * game_state, Difficulty difficulty) {
     // return parola
 
     // in base alla difficoltà si sceglie il file e si costruisce l'array di parole
-    char words[10][10] = {"sus", "aaaaaaaaa"};
-    short max_attempt = (difficulty == EXTREME) ? MAX_ATTEMPT_EXTREME : MAX_ATTEMPT_BASE;
+    // la lunghezza della stringa non deve superare word[][n]
+    char words[10][10] = {"Telefono", "dddddddd"};
+    short max_attempt = (diff == EXTREME) ? MAX_ATTEMPT_EXTREME : MAX_ATTEMPT_BASE;
 
-    initGameState(game_state, IN_GAME, difficulty, game_state -> wordState, max_attempt);
+    initGameState(gState, IN_GAME, diff, gState -> wordState, max_attempt);
 
     // char word[] = chooseWord(words);
-    char * word;
+    char * word = (char *)malloc(strlen(words[0]) * sizeof(char));
     strcpy(word, words[0]);
+
     return word;
 }
 
@@ -170,15 +174,22 @@ char * chooseWord(char ** words) {
 /**
  * Check if the letter is in the word.
  * Returns -1 if it's not, 0 otherwise
+ * Also updates the `wordFlags`
  */
-int checkLetter(GameState * gameState, char letter) {
-    char * word = gameState -> wordState -> word;
-    printf("WORD%s\n", word);
-    printf("LETT%c\n", letter);
+int checkLetter(GameState * gState, char letter) {
+    char * word = gState -> wordState -> word;
     for (short i = 0; word[i] != '\0'; i++)
     {
         if (letter == word[i])
         {   
+            // update the wordFlags
+            for (; i < strlen(word); i++)
+            {
+                if (letter == word[i])
+                {
+                    gState -> wordState -> wordFlags[i] = true;
+                }
+            }
             return 0;
         }
     }
@@ -186,7 +197,19 @@ int checkLetter(GameState * gameState, char letter) {
     return -1;
 }
 
-bool checkWord(GameState * game_state) {
+
+/**
+ * Check if the word has been guessed.
+ * Retruns `false` if it's not, `true` otherwise
+ */
+bool checkWord(GameState * gState) {
+    for (short i = 0; i < strlen(gState -> wordState -> word); i++)
+    {
+        if (gState -> wordState -> wordFlags[i] == false)
+        {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -196,7 +219,7 @@ bool checkWord(GameState * game_state) {
  */
 void printGUI(GameState * GState) {
     printf("\n");
-    //system("clear");
+    system("clear");
     switch (GState -> state)
     {
     case TITLE:
@@ -205,8 +228,8 @@ void printGUI(GameState * GState) {
         printf("║      Hi ║                             ║\n");
         printf("║    O    ║        ╞╡╒╕Ͷ 🅶 ៳╒╕ℕ         ║\n");
         printf("║   ╱|╲   ║                             ║\n");
-        printf("║    |    ║      Press any button...    ║\n");
-        printf("║   ╱ ╲   ║                    by Gallo ║\n");
+        printf("║    |    ║        Press ENTER ...      ║\n");
+        printf("║   ╱ ╲   ║                             ║\n");
         printf("╠═════════╬═════════════════════════════╝\n");
         printf("╙ PROMPT: ╨ $ ");
         break;
@@ -241,10 +264,21 @@ void printGUI(GameState * GState) {
         printf("╠═════════╦═══════╩═════════════════════╝\n");
         printf("╙ PROMPT: ╨ $ \n");
         break;
-    case POST_GAME:
+    case POST_GAME_WIN:
         printf("╔════╦════════════╦═════════════════════╗\n");
-        printf("║    | AAAAAA!!!  ║      ¥ϙʊ  ∟ʘᶊᶒ      ║\n");
-        printf("║    O            ║                     ║\n");
+        printf("║    /            ║       You Win       ║\n");
+        printf("║      close call ║                     ║\n");
+        printf("║    O            ║       Replay?       ║\n");
+        printf("║   ╱|╲           ║                     ║\n");
+        printf("║    |            ║       Y     N       ║\n");
+        printf("║   ╱ ╲           ║                     ║\n");
+        printf("╠═════════╦═══════╩═════════════════════╝\n");
+        printf("╙ PROMPT: ╨ $ ");
+        break;
+    case POST_GAME_LOSE:
+        printf("╔════╦════════════╦═════════════════════╗\n");
+        printf("║    | AAAHgrh..  ║      ¥ϙʊ  ∟ʘᶊᶒ      ║\n");
+        printf("║    X            ║                     ║\n");
         printf("║   ╱|╲           ║       Replay?       ║\n");
         printf("║    |            ║                     ║\n");
         printf("║   ╱ ╲           ║       Y     N       ║\n");
@@ -267,31 +301,73 @@ void printGUI(GameState * GState) {
     }
 }
 
-void printAttempts(GameState * GState) {
-    for (short i = 0; i < (GState -> attempts); i++) {
+void printAttempts(GameState * gState) {
+    for (short i = 0; i < (gState -> attempts); i++) {
         printf("♥");
     }
-    for (short i = 0; i < 13 + (MAX_ATTEMPT_BASE - (GState -> attempts)); i++) {
+    for (short i = 0; i < 13 + (MAX_ATTEMPT_BASE - (gState -> attempts)); i++) {
         printf(" ");
     }
     printf("║\n");
     return;
 }
 
-void printBody(GameState * GState) {
+void printBody(GameState * gState) {
         printf("║    O    ║                             ║\n");
         printf("║   ");
-        ((GState -> attempts) < 6) ? printf("╱") : printf(" ");
-        ((GState -> attempts) < 5) ? printf("|") : printf(" ");
-        ((GState -> attempts) < 4) ? printf("╲") : printf(" ");
+        int att = gState -> attempts;
+        if (gState -> difficulty == EXTREME)
+        {
+            (att < 3) ? printf("╱|") : printf("  ");
+            (att < 2) ? printf("╲") : printf(" ");
+            printf("   ║                             ║\n║    ");
+            (att < 2) ? printf("|"): printf(" ");
+            printf("    ║");
+            printWord(gState);
+            printf("║\n║   ");
+            (att < 1) ? printf("╱ ╲") : printf("   ");
+        }
+        else {
+            (att < 6) ? printf("╱") : printf(" ");
+            (att < 5) ? printf("|") : printf(" ");
+            (att < 4) ? printf("╲") : printf(" ");
+            printf("   ║                             ║\n");
+            printf("║    ");
+            (att < 3) ? printf("|") : printf(" ");
+            printf("    ║");
+            printWord(gState);
+            printf("║\n║   ");
+            (att < 2) ? printf("╱ ") : printf("  ");
+            (att < 1) ? printf("╲") : printf(" ");
+        }
         printf("   ║                             ║\n");
-        printf("║    ");
-        ((GState -> attempts) < 3) ? printf("|") : printf(" ");
-        printf("    ║                             ║\n");
-        printf("║   ");
-        ((GState -> attempts) < 2) ? printf("╱ ") : printf("  ");
-        ((GState -> attempts) < 1) ? printf("╲") : printf(" ");
-        printf("   ║                             ║\n");
+}
+
+void printWord(GameState * gState) {
+    short wordLength = strlen(gState -> wordState -> word);
+    short firstLetter = 14 - (short)(wordLength / 2);
+    short i = 0;
+    short j = 0;
+    for (; i < firstLetter; i++)
+    {
+        printf(" ");
+    }
+    for (; j < wordLength; j++)
+    {
+        if (gState -> wordState -> wordFlags[j] == true)
+        {
+            printf("%c", gState -> wordState -> word[j]);
+        }
+        else
+        {
+            printf("_");
+        }
+    }
+    for (i += j; i < 29; i++)
+    {
+        printf(" ");
+    }
+    return;
 }
 
 /**
