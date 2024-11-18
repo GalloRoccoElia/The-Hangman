@@ -44,7 +44,7 @@ void terminate(short int, char *);
 void initGameState(GameState *, State, Difficulty, WordState *, int);
 void initWordState(GameState *, char *);
 char * initGame(GameState *, Difficulty);
-char * chooseWord(char **);
+char * chooseWord(char **, int);
 int checkLetter(GameState *, char);
 bool checkWord(GameState *);
 void printGUI(GameState *);
@@ -103,7 +103,6 @@ int main(int argc, char const *argv[])
         printGUI(&gState);
 
         while (getchar() != '\n') {} // clean the input buffer
-        scanf("%*c");
         scanf("%c", &replay);
 
     } while (toupper(replay) == 'Y');
@@ -140,6 +139,7 @@ void initWordState(GameState * gState, char * w) {
  * Initializes the `gState` by `difficulty`, also loads the words' file based on `difficulty`.
  */
 char * initGame(GameState * gState, Difficulty diff) {
+    FILE * file = fopen("./Hangman/Words/Easy.txt", "w");
     // GUI x difficulty
         // load del file parole
     // parser(file)
@@ -148,25 +148,33 @@ char * initGame(GameState * gState, Difficulty diff) {
 
     // in base alla difficoltà si sceglie il file e si costruisce l'array di parole
     // la lunghezza della stringa non deve superare word[][n]
-    char words[10][10] = {"Telefono", "dddddddd"};
+    int numberWords = 3;
+    int maxLengthWord = 10;
+    char ** words = (char **)malloc(numberWords * sizeof(char *));
+    for (int i = 0; i < numberWords; i++)
+    {
+        words[i] = (char *)malloc((maxLengthWord + 1) * sizeof(char));
+    }
+
+    words[0] = "hello";
+    words[1] = "world";
+    words[2] = "sus";
+    
     short max_attempt = (diff == EXTREME) ? MAX_ATTEMPT_EXTREME : MAX_ATTEMPT_BASE;
 
     initGameState(gState, IN_GAME, diff, gState -> wordState, max_attempt);
 
-    // char word[] = chooseWord(words);
-    char * word = (char *)malloc(strlen(words[0]) * sizeof(char));
-    strcpy(word, words[0]);
-
-    return word;
+    return chooseWord(words, numberWords);
 }
 
 /**
  * Choose a randomic word from the array
  */
-char * chooseWord(char ** words) {
-    char * word;
-
-    // random
+char * chooseWord(char ** words, int numberWords) {
+    int pos = rand() % numberWords;
+    printf("%d", pos);
+    char * word = (char *)malloc(strlen(words[pos]) * sizeof(char));
+    strcpy(word, words[pos]);
 
     return word;
 }
